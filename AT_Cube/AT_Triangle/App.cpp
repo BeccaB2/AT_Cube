@@ -26,7 +26,10 @@ void App::DoFrame()
 
 	wnd.Gfx().ClearBuffer(0.2f, 0.8f, c); // Range colour
 
-	wnd.Gfx().DrawTestTriangle();
+	wnd.Gfx().DrawTestTriangle(
+		timer.Peek(), 
+		wnd.mouse.GetPosX() / 400.0f - 1.0f, 
+		-wnd.mouse.GetPosY() / 300.0f + 1.0f);
 
 	wnd.Gfx().EndFrame();
 

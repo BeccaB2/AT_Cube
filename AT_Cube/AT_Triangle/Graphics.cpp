@@ -2,8 +2,11 @@
 #include "dxerr.h"
 #include <sstream>
 #include <d3dcompiler.h>
+#include <cmath>
+#include <DirectXMath.h>
 
 namespace wrl = Microsoft::WRL;
+namespace dx = DirectX;
 
 #pragma comment(lib,"d3d11.lib") 
 #pragma comment(lib,"D3DCompiler.lib")
@@ -99,7 +102,7 @@ void Graphics::ClearBuffer(float red, float green, float blue) noexcept
 	pContext->ClearRenderTargetView(pTarget.Get(), colour);
 }
 
-void Graphics::DrawTestTriangle()
+void Graphics::DrawTestTriangle(float angle, float x, float y)
 {
 	namespace wrl = Microsoft::WRL;
 	HRESULT hr;
@@ -133,7 +136,7 @@ void Graphics::DrawTestTriangle()
 		{-0.5f, -0.5f, 0, 0, 255, 0},
 		{-0.3f, 0.3f, 0, 255, 0, 0},
 		{0.3f, 0.3f, 0, 0, 255, 0},
-		{0.0f, -0.8f, 255, 0, 0, 0},
+		{0.0f, -1.0f, 255, 0, 0, 0},
 
 		/*{ 0.0f,0.5f },*/ // For drawing a triangle using lines
 
@@ -149,7 +152,8 @@ void Graphics::DrawTestTriangle()
 
 	wrl::ComPtr<ID3D11Buffer> pVertexBuffer;
 
-	D3D11_BUFFER_DESC bd = {}; // Used for the decription of the buffer
+	// Used for the decription of the buffer
+	D3D11_BUFFER_DESC bd = {};
 	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	bd.Usage = D3D11_USAGE_DEFAULT;
 	bd.CPUAccessFlags = 0u;
@@ -191,6 +195,41 @@ void Graphics::DrawTestTriangle()
 
 	// Binding the index buffer
 	pContext->IASetIndexBuffer(pIndexBuffer.Get(), DXGI_FORMAT_R16_UINT, 0U);
+
+	// Creating a constant buffer for the transformation matrix structure (to rotate object)
+	struct ConstantBuffer
+	{
+		// Matrix 4 x 4 (array of floats)
+		dx::XMMATRIX transform;
+	};
+
+	// Data for the constant buffer
+	const ConstantBuffer cb =
+	{
+		// Rotation matrix (around z axis), also scales the x axis
+		{
+			dx::XMMatrixTranspose(
+				dx::XMMatrixRotationZ(angle) *
+				dx::XMMatrixScaling(3.0f/4.0f, 1.0f, 1.0f) *
+				dx::XMMatrixTranslation(x, y, 0.0f)
+			)
+		}
+	};
+
+	wrl::ComPtr<ID3D11Buffer> pConstantBuffer;
+	D3D11_BUFFER_DESC cbd;
+	cbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	cbd.Usage = D3D11_USAGE_DYNAMIC;
+	cbd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;;
+	cbd.MiscFlags = 0u;
+	cbd.ByteWidth = sizeof(cb);
+	cbd.StructureByteStride = 0u;
+	D3D11_SUBRESOURCE_DATA csd = {};
+	csd.pSysMem = &cb;
+	GFX_THROW_INFO(pDevice->CreateBuffer(&cbd, &csd, &pConstantBuffer));
+
+	// Binding the constant buffer to the vertex shader
+	pContext->VSSetConstantBuffers(0u, 1u, pConstantBuffer.GetAddressOf());
 
 	// Creating pixel shader
 	wrl::ComPtr<ID3D11PixelShader> pPixelShader;
@@ -238,8 +277,8 @@ void Graphics::DrawTestTriangle()
 
 	// Configuration of the viewport - can be a portion of the render target - allows you to render within multiple sections
 	D3D11_VIEWPORT vp;
-	vp.Width = 400;
-	vp.Height = 300;
+	vp.Width = 800;
+	vp.Height = 600;
 	vp.MinDepth = 0;
 	vp.MaxDepth = 1;
 	vp.TopLeftX = 0;

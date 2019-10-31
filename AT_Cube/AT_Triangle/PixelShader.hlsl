@@ -1,4 +1,11 @@
-float4 main(float3 colour : Colour) : SV_Target
+cbuffer CBuf
 {
-	return float4(colour, 1.0f); // Represents colour of pixels
+	// Array for the colours of each face
+	float4 face_colours[6];
+};
+
+float4 main(uint tid : SV_PrimitiveID) : SV_Target
+{
+	// Represents colour of each triangle face within the primitive
+	return face_colours[tid / 2];
 }

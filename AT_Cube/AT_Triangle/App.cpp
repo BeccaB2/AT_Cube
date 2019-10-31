@@ -26,6 +26,22 @@ void App::DoFrame()
 
 	wnd.Gfx().ClearBuffer(0.2f, 0.8f, c); // Range colour
 
+	// Second shape drawn at a different position
+	wnd.Gfx().DrawTestTriangle(
+		-timer.Peek(),
+		0.0f,
+		0.0f);
+
+	wnd.Gfx().DrawTestTriangle(
+		-timer.Peek(),
+		5.0f,
+		5.0f);
+
+	wnd.Gfx().DrawTestTriangle(
+		-timer.Peek(),
+		-5.0f,
+		5.0f);
+
 	wnd.Gfx().DrawTestTriangle(
 		timer.Peek(), 
 		wnd.mouse.GetPosX() / 400.0f - 1.0f, 
